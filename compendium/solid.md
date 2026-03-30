@@ -1,4 +1,4 @@
-# Ściąga: Jak pisać wysokiej jakości, testowalny, łatwy w utzymaniu, testowalny i czytelny kod
+# Ściąga: Jak pisać wysokiej jakości, łatwy w utzymaniu, testowalny i czytelny kod
 
 ## 1. Single Responsibility Principle (SRP)
 
