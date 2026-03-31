@@ -1,0 +1,39 @@
+name: Reusable Auto Format
+
+on:
+  workflow_call:
+    secrets:
+      token:
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.token }}
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: Format Python (Ruff)
+        run: |
+          pip install ruff
+          ruff format .
+          ruff check --fix .
+
+      - name: Format C# (dotnet format)
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+      - run: dotnet format
+
+      - name: Commit Changes
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "style: automated code formatting [skip ci]"
+          commit_user_name: github-actions[bot]
+          commit_user_email: github-actions[bot]@users.noreply.github.com
