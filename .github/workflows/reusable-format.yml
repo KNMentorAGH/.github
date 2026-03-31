@@ -19,17 +19,27 @@ jobs:
           token: ${{ secrets.token }}
           ref: ${{ github.event.pull_request.head.ref }}
 
+      - name: Check for Config Files
+        id: check_files
+        run: |
+          echo "has_python=$(test -f pyproject.toml && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+          echo "has_csharp=$(test -f .editorconfig && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+
       - name: Format Python (Ruff)
+        if: steps.check_files.outputs.has_python == 'true'
         run: |
           pip install ruff
           ruff format .
           ruff check --fix .
 
       - name: Format C# (dotnet format)
+        if: steps.check_files.outputs.has_csharp == 'true'
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '9.0.x'
-      - run: dotnet format
+          dotnet-version: '8.0.x'
+      - name: Run Dotnet Format
+        if: steps.check_files.outputs.has_csharp == 'true'
+        run: dotnet format
 
       - name: Commit Changes
         uses: stefanzweifel/git-auto-commit-action@v5
