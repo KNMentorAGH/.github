@@ -2,6 +2,13 @@ name: Reusable Test Runner
 
 on:
   workflow_call:
+    secrets:
+      token:
+        required: true
+
+permissions:
+  contents: read
+  pull-requests: write
 
 jobs:
   test:
@@ -9,6 +16,8 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.token }}
 
       - name: Check for Config Files
         id: check_files
@@ -43,3 +52,19 @@ jobs:
       - name: Run Python Tests (Pytest)
         if: steps.check_files.outputs.has_python == 'true'
         run: pytest --cov=src
+
+      # --- PR Report ---
+      - name: Code Coverage Report
+        uses: irongut/CodeCoverageSummary@v1.3.0
+        with:
+          filename: "**/coverage*.xml"
+          badge: true
+          fail_below_min: false
+          format: markdown
+          output: both
+
+      - name: Add Coverage PR Comment
+        if: github.event_name == 'pull_request'
+        run: gh pr comment ${{ github.event.pull_request.number }} --body-file code-coverage-results.md
+        env:
+          GITHUB_TOKEN: ${{ secrets.token }}
