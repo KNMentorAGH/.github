@@ -1,0 +1,25 @@
+name: Reusable Label Enforcer
+
+on:
+  workflow_call:
+    secrets:
+      token:
+        required: true
+
+jobs:
+  enforce-labels:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify PR Labels
+        uses: mheap/github-action-required-labels@v5
+        with:
+          mode: exactly
+          count: 1
+          labels: |
+            major
+            minor
+            patch
+          add_comment: true
+          message: "This PR is missing a versioning label! Please add exactly one: 'major', 'minor', or 'patch'."
+        env:
+          GITHUB_TOKEN: ${{ secrets.token }}
