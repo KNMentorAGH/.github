@@ -1,0 +1,45 @@
+name: Reusable Test Runner
+
+on:
+  workflow_call:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Check for Config Files
+        id: check_files
+        run: |
+          echo "has_python=$(test -f pyproject.toml && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+          echo "has_csharp=$(test -f .editorconfig && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+
+      # --- .NET ---
+      - name: Setup .NET
+        if: steps.check_files.outputs.has_csharp == 'true'
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Run C# Tests
+        if: steps.check_files.outputs.has_csharp == 'true'
+        run: dotnet test --configuration Release --verbosity normal
+
+      # --- PYTHON ---
+      - name: Setup Python
+        if: steps.check_files.outputs.has_python == 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Dependencies
+        if: steps.check_files.outputs.has_python == 'true'
+        run: |
+          pip install pytest pytest-cov
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+      - name: Run Python Tests (Pytest)
+        if: steps.check_files.outputs.has_python == 'true'
+        run: pytest --cov=src
