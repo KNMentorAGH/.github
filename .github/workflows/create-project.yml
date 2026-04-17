@@ -7,11 +7,8 @@ on:
         description: 'Name of the new repository (kebab-case)'
         required: true
       team_name:
-        description: 'Slug of the team that will own this repo (e.g. backend-team)'
+        description: 'Slug of the team (e.g. projekt-yennefer)'
         required: true
-      description:
-        description: 'Short project description'
-        required: false
 
 jobs:
   create-repo:
@@ -19,23 +16,18 @@ jobs:
     steps:
       - name: Verify Team Membership
         run: |
-          STATUS=$(gh api \
-            -H "Accept: application/vnd.github+json" \
-            /orgs/KNMentorAGH/teams/${{ github.event.inputs.team_name }}/memberships/${{ github.actor }} \
-            --silent --include -o /dev/null -w "%{http_code}")
-
-          if [ "$STATUS" != "200" ]; then
-            echo "Error: User '${{ github.actor }}' is not a member of team '${{ github.event.inputs.team_name }}'."
+          if ! gh api /orgs/KNMentorAGH/teams/${{ github.event.inputs.team_name }}/memberships/${{ github.actor }} --silent; then
+            echo "::error::User ${{ github.actor }} is not a member of team ${{ github.event.inputs.team_name }} or team does not exist!"
             exit 1
           fi
         env:
           GITHUB_TOKEN: ${{ secrets.ORG_ADMIN_TOKEN }}
+
       - name: Create Repo from Template
         run: |
           gh repo create "KNMentorAGH/${{ github.event.inputs.repo_name }}" \
-            --template "KNMentorAGH/template-project-name" \
-            --public \
-            --description "${{ github.event.inputs.description }}"
+            --template "KNMentorAGH/template" \
+            --public
         env:
           GITHUB_TOKEN: ${{ secrets.ORG_ADMIN_TOKEN }}
 
