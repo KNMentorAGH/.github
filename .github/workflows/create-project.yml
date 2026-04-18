@@ -71,7 +71,7 @@ jobs:
             echo "::error::Repository provisioning timeout - failed to verify repo existence."
             exit 1
           fi
-          
+
           CURRENT_DEFAULT=$(gh api /repos/KNMentorAGH/$REPO_LOWER -q '.default_branch')
           
           if [ "$CURRENT_DEFAULT" != "main" ]; then
@@ -110,15 +110,28 @@ jobs:
       - name: Enforce Branch Protection
         run: |
           REPO_LOWER=$(echo "${{ github.event.inputs.repo_name }}" | tr '[:upper:]' '[:lower:]')
-        
-          gh api --method PUT -H "Accept: application/vnd.github+json" \
-            /repos/KNMentorAGH/$REPO_LOWER/branches/main/protection \
-            -f required_status_checks='{"strict":true,"contexts":["check-naming-convention","format","build","test"]}' \
-            -F enforce_admins=true \
-            -f required_pull_request_reviews='{"dismiss_stale_reviews":true,"require_code_owner_reviews":true,"required_approving_review_count":1,"require_last_push_approval":false}' \
-            -F allow_force_pushes=false \
-            -F allow_deletions=false \
-            -F required_linear_history=true \
-            -F required_conversation_resolution=true
+          
+          # Using heredoc to send a clean JSON payload without escaping issues
+          gh api --method PUT /repos/KNMentorAGH/$REPO_LOWER/branches/main/protection \
+            --input - <<EOF
+          {
+            "required_status_checks": {
+              "strict": true,
+              "contexts": ["check-naming-convention", "format", "build", "test"]
+            },
+            "enforce_admins": true,
+            "required_pull_request_reviews": {
+              "dismiss_stale_reviews": true,
+              "require_code_owner_reviews": true,
+              "required_approving_review_count": 1,
+              "require_last_push_approval": false
+            },
+            "restrictions": null,
+            "allow_force_pushes": false,
+            "allow_deletions": false,
+            "required_linear_history": true,
+            "required_conversation_resolution": true
+          }
+          EOF
         env:
           GITHUB_TOKEN: ${{ secrets.ORG_ADMIN_TOKEN }}
