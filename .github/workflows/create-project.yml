@@ -135,3 +135,16 @@ jobs:
           EOF
         env:
           GITHUB_TOKEN: ${{ secrets.ORG_ADMIN_TOKEN }}
+
+      - name: Cleanup on Failure (Rollback)
+        if: failure()
+        run: |
+          REPO_LOWER=$(echo "${{ github.event.inputs.repo_name }}" | tr '[:upper:]' '[:lower:]')
+          
+          # Check if repository exists before attempting deletion
+          if gh repo view "KNMentorAGH/$REPO_LOWER" > /dev/null 2>&1; then
+            echo "::warning::Workflow failed after repository creation. Deleting 'KNMentorAGH/$REPO_LOWER' to avoid orphaned resources."
+            gh repo delete "KNMentorAGH/$REPO_LOWER" --yes
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.ORG_ADMIN_TOKEN }}
