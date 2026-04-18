@@ -71,9 +71,16 @@ jobs:
             echo "::error::Repository provisioning timeout - failed to verify repo existence."
             exit 1
           fi
+          
+          CURRENT_DEFAULT=$(gh api /repos/KNMentorAGH/$REPO_LOWER -q '.default_branch')
+          
+          if [ "$CURRENT_DEFAULT" != "main" ]; then
+            echo "Renaming default branch from $CURRENT_DEFAULT to main..."
+            gh api --method POST /repos/KNMentorAGH/$REPO_LOWER/branches/$CURRENT_DEFAULT/rename \
+              -f new_name=main
+          fi
 
           gh repo edit "KNMentorAGH/$REPO_LOWER" \
-            --default-branch main \
             --enable-squash-merge \
             --enable-merge-commit=false \
             --enable-rebase-merge=false
