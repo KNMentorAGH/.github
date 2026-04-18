@@ -6,6 +6,9 @@ on:
       token:
         required: true
 
+permissions:
+  pull-requests: write
+
 jobs:
   enforce-labels:
     runs-on: ubuntu-latest
