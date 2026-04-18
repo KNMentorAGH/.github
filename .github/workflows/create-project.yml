@@ -9,6 +9,9 @@ on:
       team_name:
         description: 'Slug of the team (e.g. projekt-yennefer)'
         required: true
+      project_leader:
+        description: 'GitHub Username of the Project Leader (Code Owner)'
+        required: true
 
 jobs:
   create-repo:
@@ -18,6 +21,11 @@ jobs:
         run: |
           if ! gh api /orgs/KNMentorAGH/teams/${{ github.event.inputs.team_name }}/memberships/${{ github.actor }} --silent; then
             echo "::error::User ${{ github.actor }} is not a member of team ${{ github.event.inputs.team_name }} or team does not exist!"
+            exit 1
+          fi
+
+          if ! gh api /orgs/KNMentorAGH/teams/${{ github.event.inputs.team_name }}/memberships/${{ github.event.inputs.project_leader }} --silent; then
+            echo "::error::Project leader (@${{ github.event.inputs.project_leader }}) is not a member of team ${{ github.event.inputs.team_name }}!"
             exit 1
           fi
         env:
@@ -38,5 +46,19 @@ jobs:
             -H "Accept: application/vnd.github+json" \
             /orgs/KNMentorAGH/teams/${{ github.event.inputs.team_name }}/repos/KNMentorAGH/${{ github.event.inputs.repo_name }} \
             -f permission='maintain'
+        env:
+          GITHUB_TOKEN: ${{ secrets.ORG_ADMIN_TOKEN }}
+      - name: Setup Code Owners
+        run: |
+          REPO_LOWER=$(echo "${{ github.event.inputs.repo_name }}" | tr '[:upper:]' '[:lower:]')
+          
+          CONTENT=$(echo "* @${{ github.event.inputs.project_leader }}" | base64)
+          
+          gh api \
+            --method PUT \
+            -H "Accept: application/vnd.github+json" \
+            /repos/KNMentorAGH/$REPO_LOWER/contents/.github/CODEOWNERS \
+            -f message="chore: initialize CODEOWNERS [skip ci]" \
+            -f content="$CONTENT"
         env:
           GITHUB_TOKEN: ${{ secrets.ORG_ADMIN_TOKEN }}
