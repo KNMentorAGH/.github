@@ -2,24 +2,28 @@ Ten dokument opisuje proces wytwórczy, którego się trzymamy, aby zapewnić wy
 
 ##  Workflow
 
-Stosujemy model **Feature Branching**. Praca nad każdą zmianą odbywa się na dedykowanej gałęzi.
+Stosujemy model Feature Branching z rygorystyczną kontrolą jakości.
 
 1. **Pobierz najnowsze zmiany:** Zawsze zaczynaj od `git pull origin main`.
 2. **Stwórz nową gałąź:** Nazewnictwo gałęzi jest wymuszane (szczegóły poniżej).
 3. **Wprowadź zmiany:** Pamiętaj o zasadach SOLID i strukturze Vertical Slice Architecture.
-4. **Wyślij Pull Request:** Wypełnij szablon i poczekaj na recenzję Code Ownera.
+4. **Auto-formatting**: Po wypchnięciu kodu (git push), bot automatycznie poprawi formatowanie i styl, jeśli zajdzie taka potrzeba.
+5. **Wyślij Pull Request**: Wypełnij szablon, nadaj odpowiednią etykietę i poczekaj na recenzję Code Ownera.
 
 ## Standardy nazewnictwa branchy
 
-Nazwa gałęzi powinna odzwierciedlać typ zmiany, przykładowo:
-- `feat/krótki-opis` – nowa funkcjonalność.
-- `fix/krótki-opis` – poprawa błędu.
-- `docs/krótki-opis` – zmiany w dokumentacji.
-- `refactor/krótki-opis` – poprawa struktury kodu bez zmiany logiki.
+System dopuszcza tylko gałęzie nazwane według wzorca: `<type>/<description-kebab-case>`.
+
+- `feat` lub `feature` – nowa funkcjonalność
+- `fix` – poprawa błędu
+- `docs` – dokumentacja
+- `refactor` – poprawa struktury kodu
+- `test` – dodawanie/zmiana testów
+- `chore`, `build`, `ci` – sprawy techniczne i konfiguracyjne
 
 ## Komunikaty commitów
 
-Używamy standardu **Conventional Commits**. Pozwala to na automatyczne generowanie list zmian (changelogs).
+Używamy **Conventional Commits**. Tytuł Twojego Pull Requesta musi zaczynać się od jednego z powyższych typów (np. `feat: add user profile slice`).
 
 Struktura: `typ: opis`
 - `feat: add user authentication module`
@@ -36,10 +40,12 @@ Przed wysłaniem kodu upewnij się, że spełnia on poniższe kryteria jakościo
    - Wszystkie publiczne metody, klasy oraz interfejsy muszą posiadać ustrukturyzowaną dokumentację techniczną (np. **XML Comments** dla C#, **Docstrings** dla Pythona).
    - Dokumentacja powinna opisywać przeznaczenie parametrów, zwracane wartości oraz możliwe wyjątki.
    - Celem jest umożliwienie automatycznego generowania specyfikacji (np. OpenAPI/Swagger) oraz wsparcie dla IntelliSense w środowiskach programistycznych.
-4. **Czysty Kod:** Kod powinien być czytelny i sformatowany zgodnie z przyjętymi w projekcie regułami. Komentarze wewnątrz metod (inline) ograniczamy do minimum, skupiając się na jasnym nazewnictwie zmiennych i ustrukturyzowanej dokumentacji nagłówkowej.
+4. **Automatyczny Styl**: Jeśli bot dokona poprawki stylu, zobaczysz commit od `github-actions[bot]`. Musisz pobrać te zmiany lokalnie (`git pull`), zanim będziesz mógł kontynuować pracę na tej gałęzi.
 
 ## Proces Pull Request i Code Review
 
-1. Po otwarciu PR, GitHub Actions automatycznie sprawdzi testy i formatowanie. Jeśli testy "nie przejdą", PR nie zostanie rozpatrzony.
-2. Każdy projekt ma swojego **Lidera (Code Owner)**. Jego zatwierdzenie jest wymagane do połączenia kodu.
-3. Stosujemy metodę **Squash and Merge**. Twoja cała historia commitów z gałęzi zostanie połączona w jeden czysty commit na gałęzi `main`.
+1. **Status Checks**: PR musi zaliczyć 4 etapy: naming, format, build oraz test. Jeśli któryś zawiedzie, merge jest zablokowany.
+2. **Versioning Labels**: Każdy PR musi posiadać dokładnie jedną etykietę: major, minor lub patch. Bez niej automat nie pozwoli na złączenie zmian.
+3. **Stale Reviews**: Każdy nowy commit na gałęzi anuluje poprzednie zatwierdzenia lidera. Jeśli coś poprawisz – lider musi sprawdzić kod ponownie.
+4. **Resolved Conversations**: Wszystkie dyskusje w Code Review muszą zostać oznaczone jako rozwiązane przed mergem.
+5. **Linear History**: Stosujemy Squash and Merge. Twoja historia zostanie spłaszczona do jednego, czystego commita na main.
