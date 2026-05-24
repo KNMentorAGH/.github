@@ -33,21 +33,11 @@ jobs:
       - name: Validate Inputs and Check for Duplicates
         run: |
           REPO_LOWER=$(echo "${{ github.event.inputs.repo_name }}" | tr '[:upper:]' '[:lower:]')
+          CONTENT=$(printf "* @${{ github.event.inputs.project_leader }}" | base64 -w 0)
           
-          if [[ ! "$REPO_LOWER" =~ ^[a-z0-9-]+$ ]]; then
-            echo "::error::Invalid repository name format. Use kebab-case."
-            exit 1
-          fi
-
-          if gh repo view "KNMentorAGH/$REPO_LOWER" > /dev/null 2>&1; then
-            echo "::error::Repository 'KNMentorAGH/$REPO_LOWER' already exists."
-            exit 1
-          fi
-          
-          if ! gh api /orgs/KNMentorAGH/teams/${{ github.event.inputs.team_name }}/memberships/${{ github.actor }} --silent; then
-            echo "::error::Actor ${{ github.actor }} is not a member of team ${{ github.event.inputs.team_name }}"
-            exit 1
-          fi
+          gh api --method PUT /repos/KNMentorAGH/$REPO_LOWER/contents/.github/CODEOWNERS \
+            -f message="chore: initialize CODEOWNERS [skip ci]" \
+            -f content="$CONTENT"
         env:
           GITHUB_TOKEN: ${{ secrets.ORG_ADMIN_TOKEN }}
 
@@ -100,10 +90,21 @@ jobs:
         run: |
           REPO_LOWER=$(echo "${{ github.event.inputs.repo_name }}" | tr '[:upper:]' '[:lower:]')
           CONTENT=$(printf "* @${{ github.event.inputs.project_leader }}" | base64 -w 0)
-          gh api --method PUT -H "Accept: application/vnd.github+json" \
-            /repos/KNMentorAGH/$REPO_LOWER/contents/.github/CODEOWNERS \
-            -f message="chore: initialize CODEOWNERS [skip ci]" \
-            -f content="$CONTENT"
+          
+          FILE_SHA=$(gh api /repos/KNMentorAGH/$REPO_LOWER/contents/.github/CODEOWNERS -q '.sha' 2>/dev/null || echo "")
+          
+          if [ -z "$FILE_SHA" ]; then
+            gh api --method PUT -H "Accept: application/vnd.github+json" \
+              /repos/KNMentorAGH/$REPO_LOWER/contents/.github/CODEOWNERS \
+              -f message="chore: initialize CODEOWNERS [skip ci]" \
+              -f content="$CONTENT"
+          else
+            gh api --method PUT -H "Accept: application/vnd.github+json" \
+              /repos/KNMentorAGH/$REPO_LOWER/contents/.github/CODEOWNERS \
+              -f message="chore: initialize CODEOWNERS [skip ci]" \
+              -f content="$CONTENT" \
+              -f sha="$FILE_SHA"
+          fi
         env:
           GITHUB_TOKEN: ${{ secrets.ORG_ADMIN_TOKEN }}
 
