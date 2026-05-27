@@ -23,14 +23,20 @@ jobs:
         id: detect
         run: |
           echo "has_csharp=$(find . -maxdepth 2 -name "*.sln" -o -name "*.csproj" | grep -q . && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
-          echo "has_python=$(test -f pyproject.toml || test -f requirements.txt && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+          echo "has_python=$((test -f pyproject.toml || test -f requirements.txt) && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+
+      - name: Guard Empty Project
+        if: steps.detect.outputs.has_csharp == 'false' && steps.detect.outputs.has_python == 'false'
+        run: |
+          echo "::warning::No supported technology stack discovered (empty repository structure). Skipping test suites gracefully."
+          exit 0
 
       # --- .NET ---
       - name: Setup .NET
         if: steps.detect.outputs.has_csharp == 'true'
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '8.0.x'
+          dotnet-version: '9.0.x'
           cache: true
 
       - name: Run C# Tests
@@ -60,7 +66,7 @@ jobs:
       # --- PR Report ---
       - name: Generate Coverage Summary
         uses: irongut/CodeCoverageSummary@v1.3.0
-        if: always()
+        if: always() && (steps.detect.outputs.has_csharp == 'true' || steps.detect.outputs.has_python == 'true')
         with:
           filename: "**/coverage.xml"
           badge: true
@@ -69,9 +75,8 @@ jobs:
           output: both
 
       - name: Add Coverage Comment to PR
-        if: github.event_name == 'pull_request' && always()
+        if: github.event_name == 'pull_request' && always() && (steps.detect.outputs.has_csharp == 'true' || steps.detect.outputs.has_python == 'true')
         run: |
-          # Sprawdzamy czy plik raportu istnieje przed próbą wysłania komentarza
           if [ -f code-coverage-results.md ]; then
             gh pr comment ${{ github.event.pull_request.number }} --body-file code-coverage-results.md
           fi

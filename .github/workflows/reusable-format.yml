@@ -22,8 +22,14 @@ jobs:
         id: detect
         run: |
           echo "has_csharp=$(find . -maxdepth 2 -name "*.sln" -o -name "*.csproj" | grep -q . && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
-          echo "has_python=$(test -f pyproject.toml || test -f requirements.txt && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+          echo "has_python=$((test -f pyproject.toml || test -f requirements.txt) && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
 
+      - name: Guard Empty Project
+        if: steps.detect.outputs.has_csharp == 'false' && steps.detect.outputs.has_python == 'false'
+        run: |
+          echo "::warning::No supported technology stack discovered (empty repository structure). Skipping formatting tasks gracefully."
+          exit 0
+      
       # --- PYTHON ---
       - name: Format Python (Ruff)
         if: steps.detect.outputs.has_python == 'true'
@@ -37,7 +43,7 @@ jobs:
         if: steps.detect.outputs.has_csharp == 'true'
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '8.0.x'
+          dotnet-version: '9.0.x'
 
       - name: Run Dotnet Format
         if: steps.detect.outputs.has_csharp == 'true'
