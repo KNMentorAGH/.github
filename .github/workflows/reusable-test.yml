@@ -93,6 +93,7 @@ jobs:
           
           Coverage: ${{ steps.coverage.outputs.coverage }}
           
+          For detailed coverage, check the workflow logs.
           EOF
 
       - name: Add Coverage Comment to PR
