@@ -61,24 +61,45 @@ jobs:
 
       - name: Run Python Tests
         if: steps.detect.outputs.has_python == 'true'
-        run: pytest --cov=src --cov-report=xml
+        run: pytest --cov=. --cov-report=xml --cov-report=term
 
       # --- PR Report ---
-      - name: Generate Coverage Summary
-        uses: irongut/CodeCoverageSummary@v1.3.0
-        if: always() && (steps.detect.outputs.has_csharp == 'true' || steps.detect.outputs.has_python == 'true')
-        with:
-          filename: "**/coverage.xml"
-          badge: true
-          fail_below_min: false
-          format: markdown
-          output: both
+      - name: Parse Coverage Report
+        if: github.event_name == 'pull_request' && always() && steps.detect.outputs.has_python == 'true'
+        id: coverage
+        run: |
+          if [ -f coverage.xml ]; then
+            # Extract coverage percentage using Python
+            python3 << 'EOF'
+            import xml.etree.ElementTree as ET
+            tree = ET.parse('coverage.xml')
+            root = tree.getroot()
+            coverage_pct = root.get('line-rate')
+            if coverage_pct:
+              coverage_pct = float(coverage_pct) * 100
+              print(f"coverage={coverage_pct:.1f}%")
+            else:
+              print("coverage=N/A")
+            EOF
+          else
+            echo "coverage=N/A"
+          fi >> $GITHUB_OUTPUT
+
+      - name: Create Coverage Comment
+        if: github.event_name == 'pull_request' && always() && steps.detect.outputs.has_python == 'true'
+        run: |
+          cat > coverage-comment.md << 'EOF'
+          ## Code Coverage Report
+          
+          Coverage: ${{ steps.coverage.outputs.coverage }}
+          
+          EOF
 
       - name: Add Coverage Comment to PR
-        if: github.event_name == 'pull_request' && always() && (steps.detect.outputs.has_csharp == 'true' || steps.detect.outputs.has_python == 'true')
+        if: github.event_name == 'pull_request' && always() && steps.detect.outputs.has_python == 'true'
         run: |
-          if [ -f code-coverage-results.md ]; then
-            gh pr comment ${{ github.event.pull_request.number }} --body-file code-coverage-results.md
+          if [ -f coverage-comment.md ]; then
+            gh pr comment ${{ github.event.pull_request.number }} --body-file coverage-comment.md
           fi
         env:
           GITHUB_TOKEN: ${{ secrets.token }}
